@@ -44,6 +44,7 @@ locals {
          Name = "${local.name}"
   }
 
+  cert_domain         = "${var.cert_domain == "" ? var.domain.name : var.cert_domain}"
   dynamic_subnets     = [ "${split(",", var.load_balancer_is_internal ? join(",", data.terraform_remote_state.vpc.private_subnets) : join(",", data.terraform_remote_state.vpc.public_subnets))}" ]
   subnets             = [ "${split(",", length(var.subnets) > 0 ? join(",", var.subnets) : join(",", local.dynamic_subnets) )}" ]
   security_groups     = "${data.aws_security_groups.elb.*.id}"
