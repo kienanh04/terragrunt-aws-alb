@@ -32,7 +32,7 @@ resource aws_s3_bucket "log" {
 
 data "aws_acm_certificate" "cert" {
   count       = "${var.https_listeners_count > 0 ? 1 : 0}"
-  domain      = "${var.cert_domain}"
+  domain      = "${local.cert_domain}"
   statuses    = ["ISSUED"]
   most_recent = true
 }
