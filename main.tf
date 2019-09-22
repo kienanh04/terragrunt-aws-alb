@@ -30,6 +30,30 @@ resource aws_s3_bucket "log" {
   tags   = "${merge(local.common_tags, var.tags)}"
 }
 
+data "aws_elb_service_account" "main" {}
+
+data "aws_iam_policy_document" "s3_policy" {
+  count  = "${var.logging_enabled && var.log_bucket_name == "" ? 1 : 0 }"
+  statement = {
+    actions = ["s3:PutObject"]
+    resources = [
+      "arn:aws:s3:::${local.log_bucket_name}${var.log_location_prefix}/*",
+      "arn:aws:s3:::${local.log_bucket_name}${var.log_location_prefix}"
+    ]
+
+    principals = {
+      identifiers = ["${data.aws_elb_service_account.main.arn}"]
+      type = "AWS"
+    }
+  }
+}
+
+resource "aws_s3_bucket_policy" "s3_log" {
+  count  = "${var.logging_enabled && var.log_bucket_name == "" ? 1 : 0 }"
+  bucket = "${aws_s3_bucket.log.id}"
+  policy = "${data.aws_iam_policy_document.s3_policy.json}"
+}
+
 data "aws_acm_certificate" "cert" {
   count       = "${var.https_listeners_count > 0 ? 1 : 0}"
   domain      = "${local.cert_domain}"
@@ -47,11 +71,12 @@ locals {
   cert_domain         = "${var.cert_domain == "" ? var.domain_name : var.cert_domain}"
   dynamic_subnets     = [ "${split(",", var.load_balancer_is_internal ? join(",", data.terraform_remote_state.vpc.private_subnets) : join(",", data.terraform_remote_state.vpc.public_subnets))}" ]
   subnets             = [ "${split(",", length(var.subnets) > 0 ? join(",", var.subnets) : join(",", local.dynamic_subnets) )}" ]
-  security_groups     = "${data.aws_security_groups.elb.*.id}"
+  security_groups     = "${data.aws_security_groups.elb.ids}"
   log_bucket_name     = "${var.logging_enabled && var.log_bucket_name == "" ? "${local.name}-log" : var.log_bucket_name }"
   log_location_prefix = "${var.log_location_prefix == "" ? local.name : var.log_location_prefix }"
   https_listeners     = "${list(map("certificate_arn", "${data.aws_acm_certificate.cert.arn}", "port", "${var.https_port}"))}"
   http_tcp_listeners  = "${list(map("port", "${var.http_port}", "protocol", "HTTP"))}"
+  target_groups_count = "${length(var.target_group_names)}"
 }
 
 resource "null_resource" "target_groups" {
@@ -66,7 +91,7 @@ resource "null_resource" "target_groups" {
     health_check_unhealthy_threshold = "${var.health_check_unhealthy_threshold}"
     health_check_path                = "${var.health_check_path}"
     health_check_matcher             = "${var.health_check_matcher}"
-    stickiness_enabled               = "{var.stickiness_enabled}"
+    stickiness_enabled               = "${var.stickiness_enabled}"
   }
 }
 
@@ -88,7 +113,7 @@ module "alb" {
   http_tcp_listeners       = "${local.http_tcp_listeners}"
   http_tcp_listeners_count = "1"
   target_groups            = "${null_resource.target_groups.*.triggers}"
-  target_groups_count      = "${length(var.target_group_names)}"
+  target_groups_count      = "${local.target_groups_count}"
 
   enable_http2                 = "${var.enable_http2}"
   ip_address_type              = "${var.ip_address_type}"
