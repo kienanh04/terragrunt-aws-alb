@@ -123,5 +123,5 @@ resource "aws_lb_target_group_attachment" "ec2_http" {
   count            = "${local.num_instance_tags > 0 ? length(local.ec2_instances) : 0}"
   target_group_arn = "${module.alb.target_group_arns[0]}"
   target_id        = "${element(local.ec2_instances, count.index)}"
-  port             = "${http_port}"
+  port             = "${var.http_port}"
 }
