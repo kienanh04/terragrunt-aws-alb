@@ -107,6 +107,7 @@ module "alb" {
 ////// Target Group Attachment
 locals = {
   num_instance_tags = "${length(keys(var.instance_tags))}"
+  instance_tags     = "${merge(var.instance_tags,map("Env","${var.project_env}"))}"
 }
 
 data "aws_instances" "ec2" {
