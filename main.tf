@@ -49,7 +49,7 @@ locals {
   security_groups     = "${data.aws_security_groups.elb.*.id}"
   log_bucket_name     = "${var.logging_enabled && var.log_bucket_name == "" ? "${local.name}-log" : var.log_bucket_name }"
   log_location_prefix = "${var.log_location_prefix == "" ? local.name : var.log_location_prefix }"
-  https_listeners     = "${var.https_listeners_count > 0 ? list(map("certificate_arn", "${data.aws_acm_certificate.cert.arn}", "port", "${var.https_port}")) : list(map()) }"
+  https_listeners     = "${list(map("certificate_arn", "${data.aws_acm_certificate.cert.arn}", "port", "${var.https_port}"))}"
   http_tcp_listeners  = "${list(map("port", "${var.http_port}", "protocol", "HTTP"))}"
 }
 
