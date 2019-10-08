@@ -62,7 +62,8 @@ data "aws_acm_certificate" "cert" {
 }
 
 locals {
-  name        = "${var.namespace == "" ? "" : "${lower(var.namespace)}-"}${lower(var.project_env_short)}-${lower(var.name)}"
+  common_name = "${var.namespace == "" ? "" : "${lower(var.namespace)}-"}${lower(var.project_env_short)}-${lower(var.name)}"
+  name        = "${var.customized_name == "" ? local.common_name : var.customized_name}"
   common_tags = {
          Env  = "${var.project_env}"
          Name = "${local.name}"

@@ -19,6 +19,7 @@ variable "cert_domain" { default = "" }
 
 variable "namespace" { default = "" }
 variable "name" { default = "alb" }
+variable "customized_name" { default = "" }
 
 variable "https_port" { default = "443" }
 variable "http_port" { default = "80" }
