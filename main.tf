@@ -70,12 +70,13 @@ locals {
   }
 
   cert_domain         = "${var.cert_domain == "" ? var.domain_name : var.cert_domain}"
+  certificate_arn     = "${element(concat(data.aws_acm_certificate.cert.*.arn, list("")), 0)}"
   dynamic_subnets     = [ "${split(",", var.load_balancer_is_internal ? join(",", data.terraform_remote_state.vpc.private_subnets) : join(",", data.terraform_remote_state.vpc.public_subnets))}" ]
   subnets             = [ "${split(",", length(var.subnets) > 0 ? join(",", var.subnets) : join(",", local.dynamic_subnets) )}" ]
   security_groups     = "${data.aws_security_groups.elb.ids}"
   log_bucket_name     = "${var.logging_enabled && var.log_bucket_name == "" ? "${local.name}-log" : var.log_bucket_name }"
   log_location_prefix = "${var.log_bucket_name == "" ? var.log_location_prefix : local.name }"
-  https_listeners     = "${list(map("certificate_arn", "${data.aws_acm_certificate.cert.arn}", "port", "${var.https_port}"))}"
+  https_listeners     = "${list(map("certificate_arn", "${local.certificate_arn}", "port", "${var.https_port}"))}"
   http_tcp_listeners  = "${list(map("port", "${var.http_port}", "protocol", "HTTP"))}"
   target_groups_count = "${length(var.target_group_names)}"
 }
